@@ -1,4 +1,5 @@
-﻿using TesteBackendEnContact.Core.Interface.ContactBook;
+﻿using System;
+using TesteBackendEnContact.Core.Interface.ContactBook;
 
 namespace TesteBackendEnContact.Core.Domain.ContactBook
 {
@@ -11,6 +12,11 @@ namespace TesteBackendEnContact.Core.Domain.ContactBook
         {
             Id = id;
             Name = name;
+        }
+
+        internal object ToContactBook()
+        {
+            throw new NotImplementedException();
         }
     }
 }

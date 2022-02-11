@@ -14,5 +14,6 @@ namespace TesteBackendEnContact.Controllers.Models
         public string Name { get; set; }
 
         public ICompany ToCompany() => new Company(Id, ContactBookId, Name);
+
     }
 }

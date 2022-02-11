@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Dapper.Contrib.Extensions;
+using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TesteBackendEnContact.Core.Domain.ContactBook.Company;
 using TesteBackendEnContact.Core.Interface.ContactBook.Company;
+using TesteBackendEnContact.Dao;
 using TesteBackendEnContact.Database;
 using TesteBackendEnContact.Repository.Interface;
 
@@ -37,6 +39,7 @@ namespace TesteBackendEnContact.Repository
         public async Task DeleteAsync(int id)
         {
             using var connection = new SqliteConnection(databaseConfig.ConnectionString);
+            connection.Open();
             using var transaction = connection.BeginTransaction();
 
             var sql = new StringBuilder();
@@ -44,6 +47,25 @@ namespace TesteBackendEnContact.Repository
             sql.AppendLine("UPDATE Contact SET CompanyId = null WHERE CompanyId = @id;");
 
             await connection.ExecuteAsync(sql.ToString(), new { id }, transaction);
+            transaction.Commit();
+            connection.Close();
+        }
+
+        // adicionar a lógica para verificar se o id existe
+        public async Task UpdateAsync(int id, ICompany company)
+        {
+            var dao = new CompanyDao(company) { Id = id };
+
+            using var connection = new SqliteConnection(databaseConfig.ConnectionString);
+            connection.Open();
+
+            var query = "SELECT * FROM Company where Id = @id";
+            var result = await connection.QuerySingleOrDefaultAsync<CompanyDao>(query, new { id });
+            using var transaction = connection.BeginTransaction();
+
+            await connection.UpdateAsync(dao);
+            transaction.Commit();
+            connection.Close();
         }
 
         public async Task<IEnumerable<ICompany>> GetAllAsync()
@@ -60,32 +82,10 @@ namespace TesteBackendEnContact.Repository
         {
             using var connection = new SqliteConnection(databaseConfig.ConnectionString);
 
-            var query = "SELECT * FROM Conpany where Id = @id";
+            var query = "SELECT * FROM Company where Id = @id";
             var result = await connection.QuerySingleOrDefaultAsync<CompanyDao>(query, new { id });
 
             return result?.Export();
         }
-    }
-
-    [Table("Company")]
-    public class CompanyDao : ICompany
-    {
-        [Key]
-        public int Id { get; set; }
-        public int ContactBookId { get; set; }
-        public string Name { get; set; }
-
-        public CompanyDao()
-        {
-        }
-
-        public CompanyDao(ICompany company)
-        {
-            Id = company.Id;
-            ContactBookId = company.ContactBookId;
-            Name = company.Name;
-        }
-
-        public ICompany Export() => new Company(Id, ContactBookId, Name);
     }
 }

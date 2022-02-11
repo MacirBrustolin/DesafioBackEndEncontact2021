@@ -1,4 +1,6 @@
-﻿namespace TesteBackendEnContact.Core.Interface.ContactBook
+﻿using System;
+
+namespace TesteBackendEnContact.Core.Interface.ContactBook
 {
     public interface IContactBook
     {

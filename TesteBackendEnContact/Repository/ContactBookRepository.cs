@@ -3,9 +3,11 @@ using Dapper.Contrib.Extensions;
 using Microsoft.Data.Sqlite;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using TesteBackendEnContact.Core.Domain.ContactBook;
 using TesteBackendEnContact.Core.Interface.ContactBook;
+using TesteBackendEnContact.Dao;
 using TesteBackendEnContact.Database;
 using TesteBackendEnContact.Repository.Interface;
 
@@ -35,14 +37,31 @@ namespace TesteBackendEnContact.Repository
         public async Task DeleteAsync(int id)
         {
             using var connection = new SqliteConnection(databaseConfig.ConnectionString);
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
 
-            // TODO
-            var sql = "";
+            var sql = new StringBuilder();
+            sql.AppendLine("DELETE FROM ContactBook WHERE Id = @id;");
+            sql.AppendLine("UPDATE Contact SET CompanyId = null WHERE CompanyId = @id;");
 
-            await connection.ExecuteAsync(sql);
+            await connection.ExecuteAsync(sql.ToString(), new{ id }, transaction);
+            transaction.Commit();
+            connection.Close();
         }
 
+        public async Task UpdateAsync(int id, IContactBook contactBook)
+        {
+            var dao = new ContactBookDao(contactBook) { Id = id };
 
+            using var connection = new SqliteConnection(databaseConfig.ConnectionString);
+
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+
+            await connection.UpdateAsync(dao);
+            transaction.Commit();
+            connection.Close();
+        }
 
 
         public async Task<IEnumerable<IContactBook>> GetAllAsync()
@@ -68,25 +87,5 @@ namespace TesteBackendEnContact.Repository
 
             return list.ToList().Where(item => item.Id == id).FirstOrDefault();
         }
-    }
-
-    [Table("ContactBook")]
-    public class ContactBookDao : IContactBook
-    {
-        [Key]
-        public int Id { get; set; }
-        public string Name { get; set; }
-
-        public ContactBookDao()
-        {
-        }
-
-        public ContactBookDao(IContactBook contactBook)
-        {
-            Id = contactBook.Id;
-            Name = Name;
-        }
-
-        public IContactBook Export() => new ContactBook(Id, Name);
     }
 }

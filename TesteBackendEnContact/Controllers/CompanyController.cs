@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TesteBackendEnContact.Controllers.Models;
@@ -24,6 +26,13 @@ namespace TesteBackendEnContact.Controllers
         {
             return Ok(await companyRepository.SaveAsync(company.ToCompany()));
         }
+
+        [HttpPut]
+        public async Task Update(int id, SaveCompanyRequest company, [FromServices] ICompanyRepository companyRepository)
+        {
+            await companyRepository.UpdateAsync(id, company.ToCompany());
+        }
+
 
         [HttpDelete]
         public async Task Delete(int id, [FromServices] ICompanyRepository companyRepository)
