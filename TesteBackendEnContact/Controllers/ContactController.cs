@@ -35,10 +35,10 @@ namespace TesteBackendEnContact.Controllers
             return await contactRepository.GetAllAsync();
         }
 
-        [HttpGet("{id}")]
-        public async Task<IContact> Get(int id, [FromServices] IContactRepository contactRepository)
+        [HttpGet("{searchString}")]
+        public async Task<IEnumerable<IContact>> Get(string searchString, [FromServices] IContactRepository contactRepository)
         {
-            return await contactRepository.GetAsync(id);
+            return await contactRepository.GetAsync(searchString);
         }
 
         [HttpPost]
@@ -74,12 +74,30 @@ namespace TesteBackendEnContact.Controllers
                 }
 
                 var contatos = new List<Contact>();
+                var companyList = await contactRepository.CompanyList();
+
+                
 
                 for (int i = 0; i < csvData.Rows.Count; i++)
                 {
+                    int companyIdAux = 0;
+
+                    foreach (var company in companyList)
+                    { 
+                        if (company.Equals(csvData.Rows[i].ItemArray[2].ToString()))
+                        {
+                            companyIdAux = int.Parse(csvData.Rows[i].ItemArray[2].ToString());
+                            break;
+                        }
+                        else
+                        {
+                            companyIdAux = 0;
+                        }
+                    }
+
                     contatos.Add(new Contact(int.Parse(csvData.Rows[i].ItemArray[0].ToString()),
                                             int.Parse(csvData.Rows[i].ItemArray[1].ToString()),
-                                            int.Parse(csvData.Rows[i].ItemArray[2].ToString()),
+                                            companyIdAux,
                                             csvData.Rows[i].ItemArray[3].ToString(),
                                             csvData.Rows[i].ItemArray[4].ToString(),
                                             csvData.Rows[i].ItemArray[5].ToString(),
@@ -88,7 +106,6 @@ namespace TesteBackendEnContact.Controllers
 
                 }
 
-                var exists = contactRepository.CompanyExists(contatos[0].CompanyId);
                 foreach (var contato in contatos)
                 {
                     await contactRepository.SaveAsync(contato);

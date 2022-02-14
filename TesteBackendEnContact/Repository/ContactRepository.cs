@@ -46,29 +46,29 @@ namespace TesteBackendEnContact.Repository
             return result?.Select(item => item.Export());
         }
 
-        public async Task<IContact> GetAsync(int id)
+        public async Task<IEnumerable<IContact>> GetAsync(string searchString)
         {
             using var connection = new SqliteConnection(databaseConfig.ConnectionString);
 
-            var query = "SELECT * FROM Contact where Id = @id";
-            var result = await connection.QuerySingleOrDefaultAsync<ContactDao>(query, new { id });
+            var query = "SELECT * FROM Contact WHERE ((Id LIKE '%' || @searchString || '%') OR (CompanyId LIKE '%' || @searchString || '%') OR (ContactBookId LIKE '%' || @searchString || '%') OR (Name LIKE '%' || @searchString || '%') OR (Phone LIKE '%' || @searchString || '%') OR (Email LIKE '%' || @searchString || '%') OR (Address LIKE '%' || @searchString || '%'))";
+            var result = await connection.QueryAsync<ContactDao>(query, new { searchString });
 
-            return result?.Export();
+            return result?.Select(item => item.Export());
         }
 
-        public async Task<int> CompanyExists(int id)
+        public async Task<IEnumerable<string>> CompanyList()
         {
             using var connection = new SqliteConnection(databaseConfig.ConnectionString);
             connection.Open();
             using var transaction = connection.BeginTransaction();
 
-            var sql = "select Count(*) from Company where Id = @id;";
+            var sql = "select distinct Id from Company";
 
-            int count = Convert.ToInt32(connection.ExecuteScalar(sql, new { id }, transaction));
+            var companies = await connection.QueryAsync<string>(sql, transaction);
             transaction.Commit();
             connection.Close();
 
-            return count;
+            return companies;
         }
     }
 }
