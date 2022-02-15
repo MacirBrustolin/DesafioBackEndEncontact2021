@@ -56,9 +56,10 @@ namespace TesteBackendEnContact.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<IContact>> UploadFile(IFormFile file, [FromServices] IContactRepository contactRepository, [FromServices] IContactBookRepository contactBookRepository)
+        public async Task<IActionResult> UploadFile(IFormFile file, [FromServices] IContactRepository contactRepository, [FromServices] IContactBookRepository contactBookRepository)
         {
             var csvData = new DataTable();
+            var contatos = new List<Contact>();
             try
             {
                 using var csvReader = new TextFieldParser(file.OpenReadStream());
@@ -87,7 +88,7 @@ namespace TesteBackendEnContact.Controllers
                     csvData.Rows.Add(fieldData);
                 }
 
-                var contatos = new List<Contact>();
+                
                 var companyList = await contactRepository.CompanyList();
 
                 
@@ -95,12 +96,14 @@ namespace TesteBackendEnContact.Controllers
                 for (int i = 0; i < csvData.Rows.Count; i++)
                 {
                     int companyIdAux = 0;
+                    _ = int.TryParse(csvData.Rows[i].ItemArray[0].ToString(), out int Id);
+                    _ = int.TryParse(csvData.Rows[i].ItemArray[1].ToString(), out int contactBook);
 
                     foreach (var company in companyList)
                     { 
                         if (company.Equals(csvData.Rows[i].ItemArray[2].ToString()))
                         {
-                            companyIdAux = int.Parse(csvData.Rows[i].ItemArray[2].ToString());
+                            int.TryParse(csvData.Rows[i].ItemArray[2].ToString(), out companyIdAux);
                             break;
                         }
                         else
@@ -108,9 +111,9 @@ namespace TesteBackendEnContact.Controllers
                             companyIdAux = 0;
                         }
                     }
-
-                    contatos.Add(new Contact(int.Parse(csvData.Rows[i].ItemArray[0].ToString()),
-                                            int.Parse(csvData.Rows[i].ItemArray[1].ToString()),
+                    var teste = csvData.Rows[i].ItemArray[0].ToString();
+                    contatos.Add(new Contact(Id,
+                                            contactBook,
                                             companyIdAux,
                                             csvData.Rows[i].ItemArray[3].ToString(),
                                             csvData.Rows[i].ItemArray[4].ToString(),
@@ -127,9 +130,10 @@ namespace TesteBackendEnContact.Controllers
             }
             catch (Exception ex)
             {
-                return null;
+                return Ok(ex.Message);
             }
-            return Ok();
+
+            return Ok(new Response<IEnumerable<IContact>>(contatos));
         }
     }
 }
