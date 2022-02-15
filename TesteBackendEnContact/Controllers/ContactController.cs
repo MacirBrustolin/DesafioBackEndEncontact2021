@@ -32,9 +32,17 @@ namespace TesteBackendEnContact.Controllers
         }
 
         [HttpGet]
-        public async Task<IEnumerable<IContact>> Get([FromServices] IContactRepository contactRepository)
+        public async Task<IActionResult> Get([FromServices] IContactRepository contactRepository)
         {
-            return await contactRepository.GetAllAsync();
+            var response = await contactRepository.GetAllAsync();
+            return Ok(new Response<IEnumerable<IContact>>(response));
+        }
+
+        [HttpGet("{companyId}, {contactBookId}")]
+        public async Task<IActionResult> Get(int companyId, int contactBookId, [FromServices] IContactRepository contactRepository)
+        {
+            var response = await contactRepository.GetByCompanyAndContactBook(companyId, contactBookId);
+            return Ok(new Response<IEnumerable<IContact>>(response));
         }
 
         [HttpGet("{searchString}")]
@@ -116,7 +124,6 @@ namespace TesteBackendEnContact.Controllers
                 {
                     await contactRepository.SaveAsync(contato);
                 }
-                //Id,ContactBookId,CompanyId,Name,Phone,Email,Address
             }
             catch (Exception ex)
             {

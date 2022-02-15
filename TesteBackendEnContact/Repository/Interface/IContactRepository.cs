@@ -13,5 +13,6 @@ namespace TesteBackendEnContact.Repository.Interface
         Task<IEnumerable<IContact>> GetAsync(int pageRows, int pageNumber, string searchString);
         Task<IEnumerable<string>> CompanyList();
         Task<int> RegistersCount(string searchString);
+        Task<IEnumerable<IContact>> GetByCompanyAndContactBook(int companyId, int contactBookId);
     }
 }

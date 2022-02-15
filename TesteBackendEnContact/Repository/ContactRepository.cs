@@ -56,6 +56,17 @@ namespace TesteBackendEnContact.Repository
             return result?.Select(item => item.Export());
         }
 
+        public async Task<IEnumerable<IContact>> GetByCompanyAndContactBook(int companyId, int contactBookId)
+        {
+            using var connection = new SqliteConnection(databaseConfig.ConnectionString);
+
+            var query = "SELECT Contact.Id, Contact.CompanyId, Contact.ContactBookId, Company.Id as company_id, Company.Name as company_name, ContactBook.Id as contactbook_id, ContactBook.Name as contactbook_name, Contact.Name, Contact.Phone, Contact.Email, Contact.Address FROM Contact LEFT JOIN Company ON Company.Id = Contact.CompanyId LEFT JOIN ContactBook ON ContactBook.Id = Contact.ContactBookId WHERE Contact.CompanyId = @companyId AND Contact.ContactBookId = @contactBookId";
+            var result = await connection.QueryAsync<ContactDao>(query, new { companyId, contactBookId });
+
+            return result?.Select(item => item.Export());
+        }
+
+
         public async Task<int> RegistersCount(string searchString)
         {
             using var connection = new SqliteConnection(databaseConfig.ConnectionString);
