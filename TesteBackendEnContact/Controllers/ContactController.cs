@@ -14,6 +14,8 @@ using System.Threading.Tasks;
 using TesteBackendEnContact.Controllers.Models;
 using TesteBackendEnContact.Core.Domain.ContactBook.Contact;
 using TesteBackendEnContact.Core.Interface.ContactBook.Contact;
+using TesteBackendEnContact.Filters;
+using TesteBackendEnContact.Wrapers;
 using TesteBackendEnContact.Repository.Interface;
 
 namespace TesteBackendEnContact.Controllers
@@ -36,9 +38,13 @@ namespace TesteBackendEnContact.Controllers
         }
 
         [HttpGet("{searchString}")]
-        public async Task<IEnumerable<IContact>> Get(string searchString, [FromServices] IContactRepository contactRepository)
+        public async Task<IActionResult> Get(int pageRows, int pageNumber, string searchString, [FromServices] IContactRepository contactRepository)
         {
-            return await contactRepository.GetAsync(searchString);
+            var validFilter = new PaginationFilter(pageNumber, pageRows);
+            var registersCount = contactRepository.RegistersCount(searchString);
+            var pagedData = await contactRepository.GetAsync(validFilter.PageSize, validFilter.PageNumber, searchString);
+
+            return Ok(new PagedResponse<IEnumerable<IContact>>(pagedData, validFilter.PageNumber, validFilter.PageSize, registersCount.Result));
         }
 
         [HttpPost]

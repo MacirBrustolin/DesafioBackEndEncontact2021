@@ -10,7 +10,8 @@ namespace TesteBackendEnContact.Repository.Interface
     {
         Task<IContact> SaveAsync(IContact contact);
         Task<IEnumerable<IContact>> GetAllAsync();
-        Task<IEnumerable<IContact>> GetAsync(string searchString);
+        Task<IEnumerable<IContact>> GetAsync(int pageRows, int pageNumber, string searchString);
         Task<IEnumerable<string>> CompanyList();
+        Task<int> RegistersCount(string searchString);
     }
 }

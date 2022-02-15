@@ -46,14 +46,26 @@ namespace TesteBackendEnContact.Repository
             return result?.Select(item => item.Export());
         }
 
-        public async Task<IEnumerable<IContact>> GetAsync(string searchString)
+        public async Task<IEnumerable<IContact>> GetAsync(int pageRows, int pageNumber, string searchString)
         {
             using var connection = new SqliteConnection(databaseConfig.ConnectionString);
 
-            var query = "SELECT * FROM Contact WHERE ((Id LIKE '%' || @searchString || '%') OR (CompanyId LIKE '%' || @searchString || '%') OR (ContactBookId LIKE '%' || @searchString || '%') OR (Name LIKE '%' || @searchString || '%') OR (Phone LIKE '%' || @searchString || '%') OR (Email LIKE '%' || @searchString || '%') OR (Address LIKE '%' || @searchString || '%'))";
-            var result = await connection.QueryAsync<ContactDao>(query, new { searchString });
+            var query = "SELECT * FROM Contact WHERE ((Id LIKE '%' || @searchString || '%') OR (CompanyId LIKE '%' || @searchString || '%') OR (ContactBookId LIKE '%' || @searchString || '%') OR (Name LIKE '%' || @searchString || '%') OR (Phone LIKE '%' || @searchString || '%') OR (Email LIKE '%' || @searchString || '%') OR (Address LIKE '%' || @searchString || '%')) LIMIT @pageRows OFFSET @page";
+            var result = await connection.QueryAsync<ContactDao>(query, new { pageRows, page = pageRows*pageNumber, searchString });
 
             return result?.Select(item => item.Export());
+        }
+
+        public async Task<int> RegistersCount(string searchString)
+        {
+            using var connection = new SqliteConnection(databaseConfig.ConnectionString);
+            var query = "SELECT COUNT(*) FROM Contact WHERE ((Id LIKE '%' || @searchString || '%') OR (CompanyId LIKE '%' || @searchString || '%') OR (ContactBookId LIKE '%' || @searchString || '%') OR (Name LIKE '%' || @searchString || '%') OR (Phone LIKE '%' || @searchString || '%') OR (Email LIKE '%' || @searchString || '%') OR (Address LIKE '%' || @searchString || '%'))";
+
+            var result = await connection.QueryAsync<int>(query, new { searchString });
+
+            return result.FirstOrDefault();
+
+
         }
 
         public async Task<IEnumerable<string>> CompanyList()
