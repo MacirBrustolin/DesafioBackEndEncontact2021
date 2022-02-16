@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using TesteBackendEnContact.Controllers.Models;
 using TesteBackendEnContact.Core.Interface.ContactBook.Company;
 using TesteBackendEnContact.Repository.Interface;
+using TesteBackendEnContact.Wrapers;
 
 namespace TesteBackendEnContact.Controllers
 {
@@ -22,34 +23,39 @@ namespace TesteBackendEnContact.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ICompany>> Post(SaveCompanyRequest company, [FromServices] ICompanyRepository companyRepository)
+        public async Task<IActionResult> Post(SaveCompanyRequest company, [FromServices] ICompanyRepository companyRepository)
         {
-            return Ok(await companyRepository.SaveAsync(company.ToCompany()));
+            var response = await companyRepository.SaveAsync(company.ToCompany());
+            return Ok(new Response<ICompany>(response));
         }
 
         [HttpPut]
-        public async Task Update(int id, SaveCompanyRequest company, [FromServices] ICompanyRepository companyRepository)
+        public async Task<IActionResult> Update(int id, SaveCompanyRequest company, [FromServices] ICompanyRepository companyRepository)
         {
             await companyRepository.UpdateAsync(id, company.ToCompany());
+            return Ok();
         }
 
 
         [HttpDelete]
-        public async Task Delete(int id, [FromServices] ICompanyRepository companyRepository)
+        public async Task<IActionResult> Delete(int id, [FromServices] ICompanyRepository companyRepository)
         {
             await companyRepository.DeleteAsync(id);
+            return Ok();
         }
 
         [HttpGet]
-        public async Task<IEnumerable<ICompany>> Get([FromServices] ICompanyRepository companyRepository)
+        public async Task<IActionResult> Get([FromServices] ICompanyRepository companyRepository)
         {
-            return await companyRepository.GetAllAsync();
+            var response = await companyRepository.GetAllAsync();
+            return Ok(new Response<IEnumerable<ICompany>>(response));
         }
 
         [HttpGet("{id}")]
-        public async Task<ICompany> Get(int id, [FromServices] ICompanyRepository companyRepository)
+        public async Task<IActionResult> Get(int id, [FromServices] ICompanyRepository companyRepository)
         {
-            return await companyRepository.GetAsync(id);
+            var response = await companyRepository.GetAsync(id);
+            return Ok(new Response<ICompany>(response));
         }
     }
 }

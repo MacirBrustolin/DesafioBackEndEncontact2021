@@ -36,6 +36,22 @@ namespace TesteBackendEnContact.Repository
             return dao.Export();
         }
 
+        public async Task UpdateAsync(int id, IContact contact)
+        {
+            var dao = new ContactDao(contact) { Id = id };
+
+            using var connection = new SqliteConnection(databaseConfig.ConnectionString);
+            connection.Open();
+
+            var query = "SELECT * FROM Contact where Id = @id";
+            var result = await connection.QuerySingleOrDefaultAsync<ContactDao>(query, new { id });
+            using var transaction = connection.BeginTransaction();
+
+            await connection.UpdateAsync(dao);
+            transaction.Commit();
+            connection.Close();
+        }
+
         public async Task<IEnumerable<IContact>> GetAllAsync()
         {
             using var connection = new SqliteConnection(databaseConfig.ConnectionString);
@@ -85,13 +101,28 @@ namespace TesteBackendEnContact.Repository
             connection.Open();
             using var transaction = connection.BeginTransaction();
 
-            var sql = "select distinct Id from Company";
+            var sql = "SELECT DISTINCT Id FROM Company";
 
             var companies = await connection.QueryAsync<string>(sql, transaction);
             transaction.Commit();
             connection.Close();
 
             return companies;
+        }
+
+        public async Task<IEnumerable<int>> ContactIdList()
+        {
+            using var connection = new SqliteConnection(databaseConfig.ConnectionString);
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+
+            var sql = "SELECT DISTINCT Id FROM Contact";
+
+            var contactsIds = await connection.QueryAsync<int>(sql, transaction);
+            transaction.Commit();
+            connection.Close();
+
+            return contactsIds;
         }
     }
 }

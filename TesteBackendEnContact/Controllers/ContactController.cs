@@ -17,6 +17,9 @@ using TesteBackendEnContact.Core.Interface.ContactBook.Contact;
 using TesteBackendEnContact.Filters;
 using TesteBackendEnContact.Wrapers;
 using TesteBackendEnContact.Repository.Interface;
+using CsvHelper.Configuration;
+using TesteBackendEnContact.Mapping;
+using System.Linq;
 
 namespace TesteBackendEnContact.Controllers
 {
@@ -58,80 +61,64 @@ namespace TesteBackendEnContact.Controllers
         [HttpPost]
         public async Task<IActionResult> UploadFile(IFormFile file, [FromServices] IContactRepository contactRepository, [FromServices] IContactBookRepository contactBookRepository)
         {
-            var csvData = new DataTable();
             var contatos = new List<Contact>();
-            try
+
+            var fileextension = Path.GetExtension(file.FileName);
+            var filename = Guid.NewGuid().ToString() + fileextension;
+            var filepath = Path.Combine(Directory.GetCurrentDirectory(), filename);
+
+            using (FileStream fs = System.IO.File.Create(filepath))
             {
-                using var csvReader = new TextFieldParser(file.OpenReadStream());
-                csvReader.SetDelimiters(new string[] { "," });
-                csvReader.HasFieldsEnclosedInQuotes = true;
-                string[] colFields = csvReader.ReadFields();
-                foreach (string column in colFields)
+                file.CopyTo(fs);
+            }
+
+            using var reader = new StreamReader(filepath);
+
+            var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture);
+            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+            csv.Context.RegisterClassMap<ContactMap>();
+            var records = csv.GetRecords<ContactCsv>();
+
+            int companyIdAux = 0;
+            var companyList = await contactRepository.CompanyList();
+            var contactIdEnum = await contactRepository.ContactIdList();
+            var contactIdList = contactIdEnum.ToList();
+
+            foreach (var record in records)
+            {
+                foreach (var company in companyList)
                 {
-                    DataColumn datecolumn = new(column)
+                    if (company.Equals(record.CompanyId))
                     {
-                        AllowDBNull = true
-                    };
-                    csvData.Columns.Add(datecolumn);
-                }
-                while (!csvReader.EndOfData)
-                {
-                    string[] fieldData = csvReader.ReadFields();
-                    //Making empty value as null
-                    for (int i = 0; i < fieldData.Length; i++)
+                        companyIdAux = record.CompanyId;
+                        break;
+                    }
+                    else
                     {
-                        if (fieldData[i] == "")
-                        {
-                            fieldData[i] = null;
-                        }
+                        companyIdAux = 0;
                     }
-                    csvData.Rows.Add(fieldData);
                 }
+                contatos.Add(new Contact(record.Id,
+                                         record.ContactBookId,
+                                         companyIdAux,
+                                         record.Name,
+                                         record.Phone,
+                                         record.Email,
+                                         record.Address));
+            }
 
-                
-                var companyList = await contactRepository.CompanyList();
-
-                
-
-                for (int i = 0; i < csvData.Rows.Count; i++)
+            foreach (var contato in contatos)
+            {
+                if (contactIdList.Contains(contato.Id))
                 {
-                    int companyIdAux = 0;
-                    _ = int.TryParse(csvData.Rows[i].ItemArray[0].ToString(), out int Id);
-                    _ = int.TryParse(csvData.Rows[i].ItemArray[1].ToString(), out int contactBook);
-
-                    foreach (var company in companyList)
-                    { 
-                        if (company.Equals(csvData.Rows[i].ItemArray[2].ToString()))
-                        {
-                            int.TryParse(csvData.Rows[i].ItemArray[2].ToString(), out companyIdAux);
-                            break;
-                        }
-                        else
-                        {
-                            companyIdAux = 0;
-                        }
-                    }
-                    var teste = csvData.Rows[i].ItemArray[0].ToString();
-                    contatos.Add(new Contact(Id,
-                                            contactBook,
-                                            companyIdAux,
-                                            csvData.Rows[i].ItemArray[3].ToString(),
-                                            csvData.Rows[i].ItemArray[4].ToString(),
-                                            csvData.Rows[i].ItemArray[5].ToString(),
-                                            csvData.Rows[i].ItemArray[6].ToString()
-                                            ));
-
+                    await contactRepository.UpdateAsync(contato.Id, contato);
                 }
-
-                foreach (var contato in contatos)
+                else
                 {
                     await contactRepository.SaveAsync(contato);
                 }
             }
-            catch (Exception ex)
-            {
-                return Ok(ex.Message);
-            }
+
 
             return Ok(new Response<IEnumerable<IContact>>(contatos));
         }

@@ -36,7 +36,7 @@ namespace TesteBackendEnContact.Dao
             Id = contact.Id;
             ContactBookId = contact.ContactBookId;
             CompanyId = contact.CompanyId;
-            Name = contact.Name;
+             Name = contact.Name;
             Phone = contact.Phone;
             Email = contact.Email;
             Address = contact.Address;
