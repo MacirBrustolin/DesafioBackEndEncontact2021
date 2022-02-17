@@ -59,7 +59,7 @@ namespace TesteBackendEnContact.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> UploadFile(IFormFile file, [FromServices] IContactRepository contactRepository, [FromServices] IContactBookRepository contactBookRepository)
+        public async Task<IActionResult> UploadFile(IFormFile file, [FromServices] IContactRepository contactRepository)
         {
             var contatos = new List<Contact>();
 
@@ -72,55 +72,64 @@ namespace TesteBackendEnContact.Controllers
                 file.CopyTo(fs);
             }
 
-            using var reader = new StreamReader(filepath);
+            using (var reader = new StreamReader(filepath))
+            { 
 
-            var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture);
-            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-            csv.Context.RegisterClassMap<ContactMap>();
-            var records = csv.GetRecords<ContactCsv>();
+                var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture);
+                using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+                csv.Context.RegisterClassMap<ContactMap>();
+                var records = csv.GetRecords<ContactCsv>();
 
-            int companyIdAux = 0;
-            var companyList = await contactRepository.CompanyList();
-            var contactIdEnum = await contactRepository.ContactIdList();
-            var contactIdList = contactIdEnum.ToList();
+                int companyIdAux = 0;
+                var companyList = await contactRepository.CompanyList();
+                var contactIdEnum = await contactRepository.ContactIdList();
+                var contactIdList = contactIdEnum.ToList();
 
-            foreach (var record in records)
-            {
-                foreach (var company in companyList)
+                foreach (var record in records)
                 {
-                    if (company.Equals(record.CompanyId))
+                    foreach (var company in companyList)
                     {
-                        companyIdAux = record.CompanyId;
-                        break;
+                        if (Convert.ToInt32(company) == record.CompanyId)
+                        {
+                            companyIdAux = record.CompanyId;
+                            break;
+                        }
+                        else
+                        {
+                            companyIdAux = 0;
+                        }
+                    }
+                    contatos.Add(new Contact(record.Id,
+                                             record.ContactBookId,
+                                             companyIdAux,
+                                             record.Name,
+                                             record.Phone,
+                                             record.Email,
+                                             record.Address));
+                }
+
+                foreach (var contato in contatos)
+                {
+                    if (contactIdList.Contains(contato.Id))
+                    {
+                        if (contato.ContactBookId > 0)
+                        {
+                            await contactRepository.UpdateAsync(contato.Id, contato);
+                        }
                     }
                     else
                     {
-                        companyIdAux = 0;
+                        if (contato.ContactBookId > 0)
+                        {
+                            await contactRepository.SaveAsync(contato);
+                        }
+
                     }
                 }
-                contatos.Add(new Contact(record.Id,
-                                         record.ContactBookId,
-                                         companyIdAux,
-                                         record.Name,
-                                         record.Phone,
-                                         record.Email,
-                                         record.Address));
             }
+            System.IO.File.Delete(filepath);
 
-            foreach (var contato in contatos)
-            {
-                if (contactIdList.Contains(contato.Id))
-                {
-                    await contactRepository.UpdateAsync(contato.Id, contato);
-                }
-                else
-                {
-                    await contactRepository.SaveAsync(contato);
-                }
-            }
-
-
-            return Ok(new Response<IEnumerable<IContact>>(contatos));
+            return Ok();
         }
     }
 }
