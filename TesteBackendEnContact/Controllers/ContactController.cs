@@ -20,6 +20,7 @@ using TesteBackendEnContact.Repository.Interface;
 using CsvHelper.Configuration;
 using TesteBackendEnContact.Mapping;
 using System.Linq;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace TesteBackendEnContact.Controllers
 {
@@ -34,102 +35,161 @@ namespace TesteBackendEnContact.Controllers
             _logger = logger;
         }
 
+        [SwaggerResponse(statusCode: 200, description: "Contacts Retrieved successfully")]
+        [SwaggerResponse(statusCode: 404, description: "Contacts not found")]
         [HttpGet]
         public async Task<IActionResult> Get([FromServices] IContactRepository contactRepository)
         {
-            var response = await contactRepository.GetAllAsync();
-            return Ok(new Response<IEnumerable<IContact>>(response));
+            try
+            {
+                var response = await contactRepository.GetAllAsync();
+                if (response is null)
+                {
+                    return NotFound();
+                }
+                return Ok(new Response<IEnumerable<IContact>>(response));
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    "Error Retrieving Data.");
+            }
         }
 
+        [SwaggerResponse(statusCode: 200, description: "Contacts Retrieved successfully")]
+        [SwaggerResponse(statusCode: 404, description: "Contacts not found")]
         [HttpGet("{companyId}, {contactBookId}")]
         public async Task<IActionResult> Get(int companyId, int contactBookId, [FromServices] IContactRepository contactRepository)
         {
-            var response = await contactRepository.GetByCompanyAndContactBook(companyId, contactBookId);
-            return Ok(new Response<IEnumerable<IContact>>(response));
+            try
+            {
+                var response = await contactRepository.GetByCompanyAndContactBook(companyId, contactBookId);
+                if (response is null)
+                {
+                    return NotFound();
+                }
+                return Ok(new Response<IEnumerable<IContact>>(response));
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    "Error Retrieving Data.");
+            }
+
         }
 
+        [SwaggerResponse(statusCode: 200, description: "Contacts Retrieved successfully")]
+        [SwaggerResponse(statusCode: 404, description: "Contacts not found")]
         [HttpGet("{searchString}")]
         public async Task<IActionResult> Get(int pageRows, int pageNumber, string searchString, [FromServices] IContactRepository contactRepository)
         {
-            var validFilter = new PaginationFilter(pageNumber, pageRows);
-            var registersCount = contactRepository.RegistersCount(searchString);
-            var pagedData = await contactRepository.GetAsync(validFilter.PageSize, validFilter.PageNumber, searchString);
+            try
+            {
+                var validFilter = new PaginationFilter(pageNumber, pageRows);
+                var registersCount = contactRepository.RegistersCount(searchString);
+                var pagedData = await contactRepository.GetAsync(validFilter.PageSize, validFilter.PageNumber, searchString);
 
-            return Ok(new PagedResponse<IEnumerable<IContact>>(pagedData, validFilter.PageNumber, validFilter.PageSize, registersCount.Result));
+                if (pagedData is null)
+                {
+                    return NotFound();
+                }
+                return Ok(new PagedResponse<IEnumerable<IContact>>(pagedData, validFilter.PageNumber, validFilter.PageSize, registersCount.Result));
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    "Error Retrieving Data.");
+            }
         }
 
+        [SwaggerResponse(statusCode: 201, description: "Success creating the new contacts")]
+        [SwaggerResponse(statusCode: 400, description: "Failed to create the new contacts")]
         [HttpPost]
         public async Task<IActionResult> UploadFile(IFormFile file, [FromServices] IContactRepository contactRepository)
         {
-            var contatos = new List<Contact>();
-
-            var fileextension = Path.GetExtension(file.FileName);
-            var filename = Guid.NewGuid().ToString() + fileextension;
-            var filepath = Path.Combine(Directory.GetCurrentDirectory(), filename);
-
-            using (FileStream fs = System.IO.File.Create(filepath))
+            try
             {
-                file.CopyTo(fs);
-            }
+                var contatos = new List<Contact>();
 
-            using (var reader = new StreamReader(filepath))
-            { 
+                var fileextension = Path.GetExtension(file.FileName);
+                var filename = Guid.NewGuid().ToString() + fileextension;
+                var filepath = Path.Combine(Directory.GetCurrentDirectory(), filename);
 
-                var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture);
-                using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-                csv.Context.RegisterClassMap<ContactMap>();
-                var records = csv.GetRecords<ContactCsv>();
-
-                int companyIdAux = 0;
-                var companyList = await contactRepository.CompanyList();
-                var contactIdEnum = await contactRepository.ContactIdList();
-                var contactIdList = contactIdEnum.ToList();
-
-                foreach (var record in records)
+                using (FileStream fs = System.IO.File.Create(filepath))
                 {
-                    foreach (var company in companyList)
+                    file.CopyTo(fs);
+                }
+
+                using (var reader = new StreamReader(filepath))
+                {
+
+                    var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture);
+                    using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+                    csv.Context.RegisterClassMap<ContactMap>();
+                    var records = csv.GetRecords<ContactCsv>();
+
+                    if (records == null)
                     {
-                        if (Convert.ToInt32(company) == record.CompanyId)
+                        return BadRequest();
+                    }
+
+                    int companyIdAux = 0;
+                    var companyList = await contactRepository.CompanyList();
+                    var contactIdEnum = await contactRepository.ContactIdList();
+                    var contactIdList = contactIdEnum.ToList();
+
+                    foreach (var record in records)
+                    {
+                        foreach (var company in companyList)
                         {
-                            companyIdAux = record.CompanyId;
-                            break;
+                            if (Convert.ToInt32(company) == record.CompanyId)
+                            {
+                                companyIdAux = record.CompanyId;
+                                break;
+                            }
+                            else
+                            {
+                                companyIdAux = 0;
+                            }
+                        }
+                        contatos.Add(new Contact(record.Id,
+                                                 record.ContactBookId,
+                                                 companyIdAux,
+                                                 record.Name,
+                                                 record.Phone,
+                                                 record.Email,
+                                                 record.Address));
+                    }
+
+                    foreach (var contato in contatos)
+                    {
+                        if (contactIdList.Contains(contato.Id))
+                        {
+                            if (contato.ContactBookId > 0)
+                            {
+                                await contactRepository.UpdateAsync(contato.Id, contato);
+                            }
                         }
                         else
                         {
-                            companyIdAux = 0;
-                        }
-                    }
-                    contatos.Add(new Contact(record.Id,
-                                             record.ContactBookId,
-                                             companyIdAux,
-                                             record.Name,
-                                             record.Phone,
-                                             record.Email,
-                                             record.Address));
-                }
+                            if (contato.ContactBookId > 0)
+                            {
+                                await contactRepository.SaveAsync(contato);
+                            }
 
-                foreach (var contato in contatos)
-                {
-                    if (contactIdList.Contains(contato.Id))
-                    {
-                        if (contato.ContactBookId > 0)
-                        {
-                            await contactRepository.UpdateAsync(contato.Id, contato);
                         }
-                    }
-                    else
-                    {
-                        if (contato.ContactBookId > 0)
-                        {
-                            await contactRepository.SaveAsync(contato);
-                        }
-
                     }
                 }
+                System.IO.File.Delete(filepath);
+
+                return Ok();
             }
-            System.IO.File.Delete(filepath);
-
-            return Ok();
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    "Error Uploading Data.");
+            }
+            
         }
     }
 }

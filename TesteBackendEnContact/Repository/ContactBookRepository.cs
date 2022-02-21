@@ -28,7 +28,10 @@ namespace TesteBackendEnContact.Repository
             using var connection = new SqliteConnection(databaseConfig.ConnectionString);
             var dao = new ContactBookDao(contactBook);
 
-            dao.Id = await connection.InsertAsync(dao);
+            if (dao.Id == 0)
+                dao.Id = await connection.InsertAsync(dao);
+            else
+                await connection.UpdateAsync(dao);
 
             return dao.Export();
         }
