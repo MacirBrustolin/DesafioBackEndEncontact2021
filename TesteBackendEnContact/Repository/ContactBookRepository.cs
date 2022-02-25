@@ -45,7 +45,7 @@ namespace TesteBackendEnContact.Repository
 
             var sql = new StringBuilder();
             sql.AppendLine("DELETE FROM ContactBook WHERE Id = @id;");
-            sql.AppendLine("UPDATE Contact SET CompanyId = null WHERE CompanyId = @id;");
+            sql.AppendLine("UPDATE Contact SET ContactBookId = null WHERE ContactBookId = @id;");
 
             await connection.ExecuteAsync(sql.ToString(), new{ id }, transaction);
             transaction.Commit();
@@ -58,12 +58,7 @@ namespace TesteBackendEnContact.Repository
 
             using var connection = new SqliteConnection(databaseConfig.ConnectionString);
 
-            connection.Open();
-            using var transaction = connection.BeginTransaction();
-
             await connection.UpdateAsync(dao);
-            transaction.Commit();
-            connection.Close();
         }
 
 
@@ -74,16 +69,9 @@ namespace TesteBackendEnContact.Repository
             var query = "SELECT * FROM ContactBook";
             var result = await connection.QueryAsync<ContactBookDao>(query);
 
-            var returnList = new List<IContactBook>();
-
-            foreach (var AgendaSalva in result.ToList())
-            {
-                IContactBook Agenda = new ContactBook(AgendaSalva.Id, AgendaSalva.Name.ToString());
-                returnList.Add(Agenda);
-            }
-
-            return returnList.ToList();
+            return result?.Select(item => item.Export());
         }
+
         public async Task<IContactBook> GetAsync(int id)
         {
             var list = await GetAllAsync();

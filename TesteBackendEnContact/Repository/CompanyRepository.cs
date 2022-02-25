@@ -51,21 +51,16 @@ namespace TesteBackendEnContact.Repository
             connection.Close();
         }
 
-        // adicionar a lógica para verificar se o id existe
         public async Task UpdateAsync(int id, ICompany company)
         {
             var dao = new CompanyDao(company) { Id = id };
 
             using var connection = new SqliteConnection(databaseConfig.ConnectionString);
-            connection.Open();
 
             var query = "SELECT * FROM Company where Id = @id";
             var result = await connection.QuerySingleOrDefaultAsync<CompanyDao>(query, new { id });
-            using var transaction = connection.BeginTransaction();
 
             await connection.UpdateAsync(dao);
-            transaction.Commit();
-            connection.Close();
         }
 
         public async Task<IEnumerable<ICompany>> GetAllAsync()
@@ -86,6 +81,17 @@ namespace TesteBackendEnContact.Repository
             var result = await connection.QuerySingleOrDefaultAsync<CompanyDao>(query, new { id });
 
             return result?.Export();
+        }
+
+        public async Task<List<int>> CompanyList()
+        {
+            using var connection = new SqliteConnection(databaseConfig.ConnectionString);
+
+            var sql = "SELECT DISTINCT Id FROM Company";
+
+            var companies = await connection.QueryAsync<int>(sql);
+
+            return companies.ToList();
         }
     }
 }

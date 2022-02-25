@@ -105,91 +105,29 @@ namespace TesteBackendEnContact.Controllers
         [SwaggerResponse(statusCode: 201, description: "Success creating the new contacts")]
         [SwaggerResponse(statusCode: 400, description: "Failed to create the new contacts")]
         [HttpPost]
-        public async Task<IActionResult> UploadFile(IFormFile file, [FromServices] IContactRepository contactRepository)
+        public async Task<IActionResult> UploadFile(IFormFile file, [FromServices] IContactRepository contactRepository, [FromServices] ICompanyRepository companyRepository)
         {
             try
             {
-                var contatos = new List<Contact>();
+                var CSVData = await contactRepository.GetDataFromCSVFile(file);
 
-                var fileextension = Path.GetExtension(file.FileName);
-                var filename = Guid.NewGuid().ToString() + fileextension;
-                var filepath = Path.Combine(Directory.GetCurrentDirectory(), filename);
-
-                using (FileStream fs = System.IO.File.Create(filepath))
+                if (CSVData == null)
                 {
-                    file.CopyTo(fs);
+                    return BadRequest();
                 }
-
-                using (var reader = new StreamReader(filepath))
-                {
-
-                    var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture);
-                    using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-                    csv.Context.RegisterClassMap<ContactMap>();
-                    var records = csv.GetRecords<ContactCsv>();
-
-                    if (records == null)
-                    {
-                        return BadRequest();
-                    }
-
-                    int companyIdAux = 0;
-                    var companyList = await contactRepository.CompanyList();
-                    var contactIdEnum = await contactRepository.ContactIdList();
-                    var contactIdList = contactIdEnum.ToList();
-
-                    foreach (var record in records)
-                    {
-                        foreach (var company in companyList)
-                        {
-                            if (Convert.ToInt32(company) == record.CompanyId)
-                            {
-                                companyIdAux = record.CompanyId;
-                                break;
-                            }
-                            else
-                            {
-                                companyIdAux = 0;
-                            }
-                        }
-                        contatos.Add(new Contact(record.Id,
-                                                 record.ContactBookId,
-                                                 companyIdAux,
-                                                 record.Name,
-                                                 record.Phone,
-                                                 record.Email,
-                                                 record.Address));
-                    }
-
-                    foreach (var contato in contatos)
-                    {
-                        if (contactIdList.Contains(contato.Id))
-                        {
-                            if (contato.ContactBookId > 0)
-                            {
-                                await contactRepository.UpdateAsync(contato.Id, contato);
-                            }
-                        }
-                        else
-                        {
-                            if (contato.ContactBookId > 0)
-                            {
-                                await contactRepository.SaveAsync(contato);
-                            }
-
-                        }
-                    }
-                }
-                System.IO.File.Delete(filepath);
+                
+                var companyList = await companyRepository.CompanyList();
+                var contactIdList = await contactRepository.ContactIdList();
+                await contactRepository.UploadFile(CSVData, companyList, contactIdList);
 
                 return Ok();
-            }
+        }
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     "Error Uploading Data.");
-            }
-            
-        }
+    }
+
+}
     }
 }
