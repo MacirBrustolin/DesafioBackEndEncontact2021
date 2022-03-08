@@ -14,8 +14,8 @@ namespace TesteBackendEnContact.Database
 
             Create.Table("Contact")
                 .WithColumn("Id").AsInt32().PrimaryKey().Identity()
-                .WithColumn("ContactBookId").AsInt32().NotNullable()
-                .WithColumn("CompanyId").AsInt32().Nullable()
+                .WithColumn("ContactBookId").AsInt32().NotNullable().ForeignKey("ContactBook", "Id")
+                .WithColumn("CompanyId").AsInt32().Nullable().ForeignKey("Company", "Id")
                 .WithColumn("Name").AsString(50).NotNullable()
                 .WithColumn("Phone").AsString(20).Nullable()
                 .WithColumn("Email").AsString(50).Nullable()
@@ -24,9 +24,10 @@ namespace TesteBackendEnContact.Database
 
             Create.Table("Company")
                 .WithColumn("Id").AsInt32().PrimaryKey().Identity()
-                .WithColumn("ContactBookId").AsInt32().NotNullable()
+                .WithColumn("ContactBookId").AsInt32().NotNullable().ForeignKey("ContactBook", "Id")
                 .WithColumn("Name").AsString(50).NotNullable()
             ;
+
         }
 
         public override void Down()

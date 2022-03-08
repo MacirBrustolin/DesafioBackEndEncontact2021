@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 using TesteBackendEnContact.Core.Domain.ContactBook;
+using TesteBackendEnContact.Core.Domain.ContactBook.Contact;
 using TesteBackendEnContact.Core.Interface.ContactBook;
 
 namespace TesteBackendEnContact.Dao

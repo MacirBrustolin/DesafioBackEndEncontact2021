@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TesteBackendEnContact.Core.Domain.ContactBook;
 using TesteBackendEnContact.Core.Domain.ContactBook.Company;
 using TesteBackendEnContact.Core.Interface.ContactBook.Company;
 using TesteBackendEnContact.Dao;
@@ -67,10 +68,14 @@ namespace TesteBackendEnContact.Repository
         {
             using var connection = new SqliteConnection(databaseConfig.ConnectionString);
 
-            var query = "SELECT * FROM Company";
-            var result = await connection.QueryAsync<CompanyDao>(query);
+            var query = "SELECT Company.Id, Company.Name, Company.ContactBookId, ContactBook.Id, ContactBook.Name FROM Company INNER JOIN ContactBook ON ContactBook.Id = Company.ContactBookId";
+            var result = await connection.QueryAsync<Company, ContactBook, Company>(query, map: (company, contactBook) =>
+            {
+                company.ContactBook = contactBook;
+                return company;
+            });
 
-            return result?.Select(item => item.Export());
+            return result;
         }
 
         public async Task<ICompany> GetAsync(int id)

@@ -4,13 +4,17 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
+using TesteBackendEnContact.Core.Domain.ContactBook;
+using TesteBackendEnContact.Core.Domain.ContactBook.Company;
 using TesteBackendEnContact.Core.Domain.ContactBook.Contact;
+using TesteBackendEnContact.Core.Interface.ContactBook;
+using TesteBackendEnContact.Core.Interface.ContactBook.Company;
 using TesteBackendEnContact.Core.Interface.ContactBook.Contact;
 
 namespace TesteBackendEnContact.Dao
 {
     [Table("Contact")]
-    public class ContactDao : IContact
+    public class ContactDao
     {
         [Key]
         public int Id { get; set; }

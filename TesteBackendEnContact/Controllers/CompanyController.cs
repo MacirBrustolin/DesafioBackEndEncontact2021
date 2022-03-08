@@ -38,10 +38,10 @@ namespace TesteBackendEnContact.Controllers
                 var response = await companyRepository.SaveAsync(company.ToCompany());
                 return CreatedAtAction(nameof(Get), new { id = response.Id }, response);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error Creating Data.");
+                    $"Error Creating Data. {ex.Message}");
             }
             
         }
@@ -67,10 +67,10 @@ namespace TesteBackendEnContact.Controllers
                 await companyRepository.UpdateAsync(id, company.ToCompany());
                 return Ok();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error Updating Data.");
+                    $"Error Updating Data. {ex.Message}");
             }
             
         }
@@ -90,10 +90,10 @@ namespace TesteBackendEnContact.Controllers
                 await companyRepository.DeleteAsync(id);
                 return Ok();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error Deleting Data.");
+                    $"Error Deleting Data. {ex.Message}");
             }
             
         }
@@ -112,10 +112,10 @@ namespace TesteBackendEnContact.Controllers
                 }
                 return Ok(new Response<IEnumerable<ICompany>>(response));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error Retrieving Data.");
+                    $"Error Retrieving Data. {ex.Message}");
             }
             
         }
@@ -134,10 +134,10 @@ namespace TesteBackendEnContact.Controllers
                 }
                 return Ok(new Response<ICompany>(response));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error Retrieving Data.");
+                    $"Error Retrieving Data. {ex.Message}");
             }
             
         }

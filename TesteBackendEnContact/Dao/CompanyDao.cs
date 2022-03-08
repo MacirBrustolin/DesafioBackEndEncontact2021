@@ -5,12 +5,14 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 using TesteBackendEnContact.Core.Domain.ContactBook.Company;
+using TesteBackendEnContact.Core.Domain.ContactBook.Contact;
+using TesteBackendEnContact.Core.Interface.ContactBook;
 using TesteBackendEnContact.Core.Interface.ContactBook.Company;
 
 namespace TesteBackendEnContact.Dao
 {
     [Table("Company")]
-    public class CompanyDao : ICompany
+    public class CompanyDao
     {
         [Key]
         public int Id { get; set; }
