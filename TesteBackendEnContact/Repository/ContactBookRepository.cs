@@ -45,7 +45,8 @@ namespace TesteBackendEnContact.Repository
 
             var sql = new StringBuilder();
             sql.AppendLine("DELETE FROM ContactBook WHERE Id = @id;");
-            sql.AppendLine("UPDATE Contact SET ContactBookId = null WHERE ContactBookId = @id;");
+            //sql.AppendLine("UPDATE Contact SET ContactBookId = 0 WHERE ContactBookId = @id;");
+            //sql.AppendLine("UPDATE Company SET ContactBookId = 0 WHERE ContactBookId = @id;");
 
             await connection.ExecuteAsync(sql.ToString(), new{ id }, transaction);
             transaction.Commit();

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Dapper.Contrib.Extensions;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -11,13 +12,15 @@ using TesteBackendEnContact.Core.Interface.ContactBook.Company;
 
 namespace TesteBackendEnContact.Dao
 {
-    [Table("Company")]
+    [System.ComponentModel.DataAnnotations.Schema.Table("Company")]
     public class CompanyDao
     {
-        [Key]
+        [Dapper.Contrib.Extensions.Key]
         public int Id { get; set; }
         [Required]
         public int ContactBookId { get; set; }
+        [Write(false)]
+        public IContactBook ContactBook { get; set; }
         [Required]
         [StringLength(50)]
         public string Name { get; set; }
@@ -30,9 +33,10 @@ namespace TesteBackendEnContact.Dao
         {
             Id = company.Id;
             ContactBookId = company.ContactBookId;
+            ContactBook = company.ContactBook;
             Name = company.Name;
         }
 
-        public ICompany Export() => new Company(Id, ContactBookId, Name);
+        public ICompany Export() => new Company(Id, ContactBookId, ContactBook, Name);
     }
 }

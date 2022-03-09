@@ -15,10 +15,11 @@ namespace TesteBackendEnContact.Core.Domain.ContactBook.Company
 
         }
 
-        public Company(int id, int contactBookId, string name)
+        public Company(int id, int contactBookId, IContactBook contactBook, string name)
         {
             Id = id;
             ContactBookId = contactBookId;
+            ContactBook = contactBook;
             Name = name;
         }
     }

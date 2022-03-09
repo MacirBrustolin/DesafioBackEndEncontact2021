@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Annotations;
@@ -6,8 +7,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TesteBackendEnContact.Controllers.Models;
+using TesteBackendEnContact.Core.Domain.ContactBook.Company;
 using TesteBackendEnContact.Core.Interface.ContactBook.Company;
 using TesteBackendEnContact.Repository.Interface;
+using TesteBackendEnContact.Resources;
 using TesteBackendEnContact.Wrapers;
 
 namespace TesteBackendEnContact.Controllers
@@ -17,25 +20,29 @@ namespace TesteBackendEnContact.Controllers
     public class CompanyController : ControllerBase
     {
         private readonly ILogger<CompanyController> _logger;
+        private readonly IMapper _mapper;
 
-        public CompanyController(ILogger<CompanyController> logger)
+        public CompanyController(ILogger<CompanyController> logger, IMapper mapper)
         {
             _logger = logger;
+            _mapper = mapper;
         }
 
         [SwaggerResponse(statusCode: 201, description: "Success creating a company")]
         [SwaggerResponse(statusCode: 400, description: "Failed to create a new company")]
         [HttpPost]
-        public async Task<IActionResult> Post(SaveCompanyRequest company, [FromServices] ICompanyRepository companyRepository)
+        public async Task<IActionResult> Post(SaveCompanyRequest resource, [FromServices] ICompanyRepository companyRepository)
         {
             try
             {
+                var company = _mapper.Map<SaveCompanyRequest, Company>(resource);
+
                 if (company == null)
                 {
                     return BadRequest();
                 }
 
-                var response = await companyRepository.SaveAsync(company.ToCompany());
+                var response = await companyRepository.SaveAsync(company);
                 return CreatedAtAction(nameof(Get), new { id = response.Id }, response);
             }
             catch (Exception ex)
@@ -49,10 +56,12 @@ namespace TesteBackendEnContact.Controllers
         [SwaggerResponse(statusCode: 200, description: "Company Updated successfully")]
         [SwaggerResponse(statusCode: 404, description: "Company not found")]
         [HttpPut]
-        public async Task<IActionResult> Update(int id, SaveCompanyRequest company, [FromServices] ICompanyRepository companyRepository)
+        public async Task<IActionResult> Update(int id, SaveCompanyRequest resource, [FromServices] ICompanyRepository companyRepository)
         {
             try
             {
+                var company = _mapper.Map<SaveCompanyRequest, Company>(resource);
+
                 if (id != company.Id)
                 {
                     return BadRequest("Company ID mismatch");
@@ -64,7 +73,7 @@ namespace TesteBackendEnContact.Controllers
                     return NotFound($"Company with Id = {id} not found");
                 }
 
-                await companyRepository.UpdateAsync(id, company.ToCompany());
+                await companyRepository.UpdateAsync(id, company);
                 return Ok();
             }
             catch (Exception ex)
@@ -110,7 +119,8 @@ namespace TesteBackendEnContact.Controllers
                 {
                     return NotFound();
                 }
-                return Ok(new Response<IEnumerable<ICompany>>(response));
+                var resource = _mapper.Map<IEnumerable<ICompany>, IEnumerable<CompanyResource>>(response);
+                return Ok(new Response<IEnumerable<CompanyResource>>(resource));
             }
             catch (Exception ex)
             {
@@ -132,7 +142,8 @@ namespace TesteBackendEnContact.Controllers
                 {
                     return NotFound();
                 }
-                return Ok(new Response<ICompany>(response));
+                var resource = _mapper.Map<ICompany, CompanyResource>(response);
+                return Ok(new Response<CompanyResource>(resource));
             }
             catch (Exception ex)
             {

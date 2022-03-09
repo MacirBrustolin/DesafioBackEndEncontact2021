@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Annotations;
@@ -9,6 +10,7 @@ using TesteBackendEnContact.Controllers.Models;
 using TesteBackendEnContact.Core.Domain.ContactBook;
 using TesteBackendEnContact.Core.Interface.ContactBook;
 using TesteBackendEnContact.Repository.Interface;
+using TesteBackendEnContact.Resources;
 using TesteBackendEnContact.Wrapers;
 
 namespace TesteBackendEnContact.Controllers
@@ -18,10 +20,12 @@ namespace TesteBackendEnContact.Controllers
     public class ContactBookController : ControllerBase
     {
         private readonly ILogger<ContactBookController> _logger;
+        private readonly IMapper _mapper;
 
-        public ContactBookController(ILogger<ContactBookController> logger)
+        public ContactBookController(ILogger<ContactBookController> logger, IMapper mapper)
         {
             _logger = logger;
+            _mapper = mapper;
         }
 
         [SwaggerResponse(statusCode: 201, description: "Success creating a new contact book")]
@@ -108,7 +112,8 @@ namespace TesteBackendEnContact.Controllers
                 {
                     return NotFound();
                 }
-                return Ok(new Response<IEnumerable<IContactBook>>(response));
+                var resource = _mapper.Map<IEnumerable<IContactBook>, IEnumerable<ContactBookResource>>(response);
+                return Ok(new Response<IEnumerable<ContactBookResource>>(resource));
             }
             catch (Exception ex)
             {
@@ -129,7 +134,8 @@ namespace TesteBackendEnContact.Controllers
                 {
                     return NotFound();
                 }
-                return Ok(new Response<IContactBook>(response));
+                var resource = _mapper.Map<IContactBook, ContactBookResource>(response);
+                return Ok(new Response<ContactBookResource>(resource));
             }
             catch (Exception ex)
             {

@@ -69,23 +69,21 @@ namespace TesteBackendEnContact.Repository
             using var connection = new SqliteConnection(databaseConfig.ConnectionString);
 
             var query = "SELECT Company.Id, Company.Name, Company.ContactBookId, ContactBook.Id, ContactBook.Name FROM Company INNER JOIN ContactBook ON ContactBook.Id = Company.ContactBookId";
-            var result = await connection.QueryAsync<Company, ContactBook, Company>(query, map: (company, contactBook) =>
+            var result = await connection.QueryAsync<CompanyDao, ContactBookDao, CompanyDao>(query, map: (company, contactBook) =>
             {
                 company.ContactBook = contactBook;
                 return company;
             });
 
-            return result;
+            return result?.Select(item => item.Export()); ;
         }
 
         public async Task<ICompany> GetAsync(int id)
         {
-            using var connection = new SqliteConnection(databaseConfig.ConnectionString);
 
-            var query = "SELECT * FROM Company where Id = @id";
-            var result = await connection.QuerySingleOrDefaultAsync<CompanyDao>(query, new { id });
+            var list = await GetAllAsync();
 
-            return result?.Export();
+            return list.ToList().Where(item => item.Id == id).FirstOrDefault();
         }
 
         public async Task<List<int>> CompanyList()
